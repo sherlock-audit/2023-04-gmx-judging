@@ -179,7 +179,7 @@ Introduce a flag to the `getLatestPrice()` function, indicating whether to use t
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/241 
 
 ## Found by 
-0xdeadbeef, IllIllI, Nyx, rvierdiiev
+0xdeadbeef, IllIllI, Nyx
 ## Summary
 
 Users can cancel their limit swap orders to get a free look into prices in future blocks
@@ -307,7 +307,7 @@ Convert to a USD amount before doing the addition
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/50 
 
 ## Found by 
-Ch\_301, rvierdiiev
+rvierdiiev
 ## Summary
 When user executes decrease order, then he provides `order.minOutputAmount` value, that should protect his from loses. This value is provided with hope that swapping that will take some fees will be executed. But in case if swapping will fail, then this `order.minOutputAmount` value will be smaller then user would like to receive in case when swapping didn't occur. Because of that user can receive less output amount.
 ## Vulnerability Detail
@@ -418,6 +418,48 @@ keepers do not benefit from failed swaps, but okay with me to let Sherlock decid
 **hrishibhat**
 
 Given that there is a loss of funds for the user in the unlikely case of swaps failing, considering this issue a valid medium
+
+**rvierdiyev**
+
+Escalate for 10 USDC
+I don't think that #124 is duplicate of this issue.
+
+I think that this report and #124 describe different things. After reading #124 i didn't feel that it's same as this report, because here i describe error case of swapping. While #124 is talking about swapping to different token.
+
+I believe that these 2 should be separate issues.
+
+**sherlock-admin**
+
+ > Escalate for 10 USDC
+> I don't think that #124 is duplicate of this issue.
+> 
+> I think that this report and #124 describe different things. After reading #124 i didn't feel that it's same as this report, because here i describe error case of swapping. While #124 is talking about swapping to different token.
+> 
+> I believe that these 2 should be separate issues.
+
+You've created a valid escalation for 10 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**IllIllI000**
+
+Agree with the escalation - #124 is Invalid, and this is a solo Medium
+
+**hrishibhat**
+
+Result:
+Medium
+Unique
+#124 is not a duplicate of this issue 
+
+**sherlock-admin**
+
+Escalations have been resolved successfully!
+
+Escalation status:
+- [rvierdiyev](https://github.com/sherlock-audit/2023-04-gmx-judging/issues/50/#issuecomment-1600308766): accepted
 
 # Issue M-2: MarketUtils.getFundingAmountPerSizeDelta() has a rounding logical error. 
 
@@ -2329,6 +2371,55 @@ Don't revert if both the primary and secondary prices are worse than the trigger
 **xvi10**
 
 would classify this as a medium, the oracle should sign a price in the block in which the order was submitted, the likelihood that the price was out of range by then should be small, it is somewhat similar to the chance of submitting a market order and price moves past the acceptable price
+
+**Jiaren-tang**
+
+Escalate for 10 USDC. 
+
+the severity should be high.
+
+the impact:
+
+> Since the stop-loss will revert if a keeper tries to execute it, essentially the order becomes wedged and there will be no stoploss protection
+
+basically this is equal to lack of slippage protection!
+
+**sherlock-admin**
+
+ > Escalate for 10 USDC. 
+> 
+> the severity should be high.
+> 
+> the impact:
+> 
+> > Since the stop-loss will revert if a keeper tries to execute it, essentially the order becomes wedged and there will be no stoploss protection
+> 
+> basically this is equal to lack of slippage protection!
+
+You've created a valid escalation for 10 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**IllIllI000**
+
+Will leave this up to Sherlock
+
+**hrishibhat**
+
+Result:
+Medium
+Has duplicates
+In addition to the Sponsor comment, This requires the market to change before the order gets mined or an oracle outage. 
+This is a valid medium. 
+
+**sherlock-admin**
+
+Escalations have been resolved successfully!
+
+Escalation status:
+- [ShadowForce](https://github.com/sherlock-audit/2023-04-gmx-judging/issues/233/#issuecomment-1598701349): rejected
 
 # Issue M-8: Users can get impact pool discounts while also increasing the virtual impact pool skew 
 

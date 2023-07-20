@@ -40,6 +40,14 @@ Manual Review
 In function ``MarketUtils.getPoolValueInfo()``
 we need to use ``indexTokenPrice.pickPrice(!maximize)`` instead of ``indexTokenPrice.pickPrice(maximize)`` to calculate ``impactPoolUsd``.
 
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/commit/13913a28e4b07f5a2cc0065fdebc34c437864c71
+
 # Issue H-2: Pool amount adjustments for collateral decreases aren't undone if swaps are successful 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/235 
@@ -102,6 +110,18 @@ Manual Review
 
 Undo the adjustment before returning
 
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/cd9f9c2f0f025c819f1080332514d6a2dedc05fc
+
+the previous flow of updating a global variable seemed more of a workaround to fix the pool amount for the swap
+
+the code was updated to use a more straightforward solution of updating the pool amount directly before performing the swap
 
 # Issue H-3: Swaps associated with position orders will use the wrong price 
 
@@ -173,6 +193,18 @@ Manual Review
 
 Introduce a flag to the `getLatestPrice()` function, indicating whether to use the custom price if it exists
 
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/commit/3243138ebdc6f86e06f5b1fef91312113ef36e20
+
+the previous logic of allowing multiple token types led to logical issues and unexpected pricing differences
+
+the code was updated to use a single (min, max) price value per token instead for each transaction
 
 # Issue H-4: Limit swap orders can be used to get a free look into the future 
 
@@ -246,6 +278,20 @@ Manual Review
 All orders should follow the same block range rules
 
 
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/commit/c5fdc2952a8c982a7c215477124a627699c2009c
+
+**IllIllI000**
+
+https://github.com/gmx-io/gmx-synthetics/commit/c5fdc2952a8c982a7c215477124a627699c2009c
+The commit changes from a greater-than block number check to a greater-than-or-equal-to check. `Array.areGreaterThan()` is no longer called anywhere, so this specific issue is resolved.
+done
+
 # Issue H-5: `initialCollateralDeltaAmount` is incorrectly interpreted as a USD value when calculating estimated remaining collateral 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/249 
@@ -301,6 +347,21 @@ Manual Review
 
 Convert to a USD amount before doing the addition
 
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/commit/f8f2dd694269a8a795a45ed961fb9970e9ce3cc8
+
+**IllIllI000**
+
+https://github.com/gmx-io/gmx-synthetics/commit/f8f2dd694269a8a795a45ed961fb9970e9ce3cc8
+The commit implements the suggested fix of converting the amount to a USD value, and uses the collateral token's min price as the conversion price. The resulting value is never written back to storage, and is only used as a minimum collateral threshold check, so using this less-favorable-to-the-user price is correct.
+Looking at 97c826246b06fc977191b8090c970c0ff93cf88a, later changes moved the price lookup to the top of the `decreasePosition()` function, and changes from using `MarketUtils.getMarketPricesForPosition()` to using `MarketUtils.getMarketPrices()`, which means the primary price is now always used, rather than the latest price which may have been a custom or secondary price. According to the comments and fix for #240, there is no longer a custom or secondary price, so the change for this fix looks correct.
+done
 
 # Issue M-1: User can loose funds in case if swapping in DecreaseOrderUtils.processOrder will fail 
 
@@ -571,6 +632,10 @@ Considering this issue as valid medium based on the following comment which the 
 > won't this lead to funding miscalculations for every second, for every user, and become larger as the funding amounts grow?
 
 
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/f8cdb4df7bba9718fe16f3ab78ebd1c9cd0b2bc6
 
 # Issue M-3: PositionUtils.validatePosition() uses ``isIncrease`` instead of ``false`` when calling isPositionLiquidatable(), making it not work properly for the case of ``isIncrease = true``. 
 
@@ -1945,6 +2010,16 @@ Pass false always to isPositionLiquidatable():
     }
 ```
 
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/ac2b1dc0fce1fc73d65859c95eb0ce72d20ff30d
+
+the code was updated to check for whether a position is liquidatable after state variables were updated
+
 # Issue M-4: short side of getReservedUsd does not work for market that has the same collateral token 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/198 
@@ -2242,6 +2317,20 @@ Manual Review
 ## Recommendation
 The description in ````Vulnerability Detail```` section has been simplified. In fact, ````gasleft```` value should be adjusted after each external call during the whole call stack, not just in ````payExecutionFee()````.
 
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/0e784e36c518dd7c1e0f529f49b733014c50e263
+
+**IllIllI000**
+
+https://github.com/gmx-io/gmx-synthetics/commit/0e784e36c518dd7c1e0f529f49b733014c50e263
+The commit adjusts the starting amount of gas by the number of external calls being made. Each external call was correctly identified and is adjusted. `gasleft() = startGas - startGas * 63 / 64; start' = gasleft() / 63; start' = (startGas - startGas * 63 / 64) / 63; start' = startGas - (startGas * 1 / 64)` so the math works out. However, because the gas passed along is the floor of the division, if the amount of gas passed to the external call is not an exact multiple of 64, the modulo 64 amount of gas won't be refunded properly.
+partially reviewed
+
 # Issue M-6: An Oracle Signer can never be removed even if he becomes malicious 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/205 
@@ -2286,6 +2375,20 @@ Manual Review
 
 ## Recommendation
 Replace the call to _addOracleSignerActionKey at Line 118 by call to _removeOracleSignerActionKey
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/3ef1161f448941f96c4a7c053391d8b0d63648b6
+
+**IllIllI000**
+
+https://github.com/gmx-io/gmx-synthetics/commit/3ef1161f448941f96c4a7c053391d8b0d63648b6
+The commit correctly implements the suggested fix of using the correct function (`_removeOracleSignerActionKey()`) for looking up the action key for oracle removal
+done
 
 # Issue M-7: Stop-loss orders do not become marketable orders 
 
@@ -2421,6 +2524,12 @@ Escalations have been resolved successfully!
 Escalation status:
 - [ShadowForce](https://github.com/sherlock-audit/2023-04-gmx-judging/issues/233/#issuecomment-1598701349): rejected
 
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/3243138ebdc6f86e06f5b1fef91312113ef36e20
+
+the code was updated to allow stop-loss orders to be executed if the trigger price was crossed
+
 # Issue M-8: Users can get impact pool discounts while also increasing the virtual impact pool skew 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/246 
@@ -2497,6 +2606,18 @@ Manual Review
 
 Don't adjust the virtual inventory for swaps if the virtual inventory wasn't consulted when calculating the impact.
 
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/1b35173e915a7d3bb85f6c6b6e59a7210897854c
+
+virtual swap price impact should be tracked by virtualInventoryForSwapsKey(virtualMarketId, isLongToken) instead of virtualInventoryForSwapsKey(virtualMarketId, token)
+
+this would allow similar markets e.g. ETH/USDC, ETH/USDT to be associated together
 
 # Issue M-9: Virtual swap balances don't take into account token prices 
 
@@ -2586,6 +2707,20 @@ Use oracle prices and convert the collateral token to the specific virtual token
 
 
 
+
+
+## Discussion
+
+**xvi10**
+
+added a note in https://github.com/gmx-io/gmx-synthetics/commit/3f17dd59b482e202b52652f8191581ca3827b18e
+
+**IllIllI000**
+
+https://github.com/gmx-io/gmx-synthetics/commit/3f17dd59b482e202b52652f8191581ca3827b18e
+The commit does not fix the issue, and instead acknowledges it via code comments, explaining the issue and its potential negative effects, and says that a patch may be applied at a later time if the issue ever manifests and needs to be addressed.
+done
+
 # Issue M-10: Virtual swap impacts can be bypassed by swapping through markets where only one of the collateral tokens has virtual inventory 
 
 Source: https://github.com/sherlock-audit/2023-04-gmx-judging/issues/257 
@@ -2636,6 +2771,18 @@ Manual Review
 Use the non-virtual token's inventory as the standin for the missing virtual inventory token
 
 
+
+
+
+## Discussion
+
+**xvi10**
+
+fixed in https://github.com/gmx-io/gmx-synthetics/pull/155/commits/1b35173e915a7d3bb85f6c6b6e59a7210897854c
+
+virtual swap price impact should be tracked by virtualInventoryForSwapsKey(virtualMarketId, isLongToken) instead of virtualInventoryForSwapsKey(virtualMarketId, token)
+
+this would allow similar markets e.g. ETH/USDC, ETH/USDT to be associated together
 
 # Issue M-11: Calc.boundedAdd used intitally but later regular subtraction used 
 
